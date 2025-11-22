@@ -16,7 +16,7 @@ type EBirdService struct {
 // validRegionCode returns true if rc matches the format of a value
 // region code as accepted by the eBird API, and false otherwise.
 func validRegionCode(rc string) bool {
-	pattern := "^[A-Za-z][A-Za-z](-[0-9][0-9])?"
+	pattern := "^[A-Za-z]{2}(-[0-9][0-9])?"
 	ok, err := regexp.Match(pattern, []byte(rc))
 	if err != nil {
 		// assume false or some malformity for error

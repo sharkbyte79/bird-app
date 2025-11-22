@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	service "github.com/sharkbyte79/bird-app/internal/service"
+	service "github.com/sharkbyte79/birdup/internal/service"
 )
 
 var eBirdApiKey string
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	r.GET("/observations/:region", recentObservations(s))
-	r.GET("/observations/notable/:region", notableObservations(s))
+	r.GET("/observations/:region/notable", notableObservations(s))
 
 	r.Run(":8080")
 }

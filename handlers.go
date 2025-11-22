@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	ebs "github.com/sharkbyte79/bird-app/internal/service"
+	ebs "github.com/sharkbyte79/birdup/internal/service"
 )
 
 // RecentObservations handles a GET request to a bundle of bird observations
