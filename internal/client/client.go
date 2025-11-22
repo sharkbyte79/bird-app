@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -30,6 +32,12 @@ type BirdObservation struct {
 	ObsReviewed bool    `json:"obsReviewed"`
 	LocPrivate  bool    `json:"locationPrivate"`
 	SubID       string  `json:"subId"`
+}
+
+type RegionSearchParams struct {
+	RegionCode string
+	Back       int
+	MaxResults int
 }
 
 // NewClient returns an API client for the eBird API configured with
@@ -60,6 +68,7 @@ func (c *Client) eBirdFetch(endpoint string) ([]BirdObservation, error) {
 		return nil, fmt.Errorf("failed to create eBird request: %w", err)
 	}
 
+	// Attach eBird API key/token to request headers
 	req.Header.Add("X-eBirdApiToken", c.apiKey)
 
 	res, err := c.httpClient.Do(req)
@@ -94,14 +103,28 @@ func verifyRegionCode(rc string) bool {
 	return true
 }
 
-func (c *Client) RecentObs(rc string) ([]BirdObservation, error) {
-	// Reject attempt with region code without correct shape
+func (c *Client) RecentObs(p RegionSearchParams) ([]BirdObservation, error) {
+	rc, back, max := p.RegionCode, p.Back, p.MaxResults
+
+	// Reject attempt for region code without correct shape
 	ok := verifyRegionCode(rc)
 	if !ok {
 		return nil, fmt.Errorf("string %s does not match region code format", rc)
 	}
 
-	endpoint := fmt.Sprintf("/data/obs/%s/recent", rc)
+	// Convert URL string to type URL to safely add query parameters, then
+	// convert it back to string form.
+	url, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent", rc))
+	if err != nil {
+		return nil, err
+	}
+	q := url.Query()
+
+	q.Add("back", strconv.Itoa(back))
+	q.Add("maxResults", strconv.Itoa(max))
+	url.RawQuery = q.Encode()
+
+	endpoint := url.String()
 	res, err := c.eBirdFetch(endpoint)
 
 	if err != nil {
