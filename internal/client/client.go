@@ -10,7 +10,14 @@ import (
 	"strings"
 )
 
-const baseUrl = "https://api.ebird.org/v2" // Root for eBird API 2.0
+const (
+	BaseUrl = "https://api.ebird.org/v2" // Root for eBird API 2.0
+)
+
+type EBirdClient interface {
+	RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, error)
+	NotableObsByRegion(p RegionSearchParams) ([]BirdObservation, error)
+}
 
 type Client struct {
 	apiKey     string       // API key for authenticating requests
@@ -21,15 +28,15 @@ type Client struct {
 type BirdObservation struct {
 	SpeciesCode string  `json:"speciesCode"` // designates particular bird species
 	ComName     string  `json:"comName"`     // natural language name for bird species in question
-	SciName     string  `json:"sciName"`
-	LocID       string  `json:"locId"`
-	LocName     string  `json:"locName"`
-	ObsDt       string  `json:"obsDt"`
-	HowMany     int     `json:"howMany"`
-	Lat         float64 `json:"lat"`
-	Lng         float64 `json:"lng"`
+	SciName     string  `json:"sciName"`     // scientific name for bird species in question
+	LocID       string  `json:"locId"`       // ID for location of observation
+	LocName     string  `json:"locName"`     // natural language name for bird species in question
+	ObsDt       string  `json:"obsDt"`       // date-time string of observation
+	HowMany     int     `json:"howMany"`     // quantity of this bird species observed
+	Lat         float64 `json:"lat"`         // latitudinal coordinates of this observation
+	Lng         float64 `json:"lng"`         // longitudinal coordinates of this observation
 	ObsValid    bool    `json:"obsValid"`
-	ObsReviewed bool    `json:"obsReviewed"`
+	ObsReviewed bool    `json:"obsReviewed"` // has this observation report been reviewed
 	LocPrivate  bool    `json:"locationPrivate"`
 	SubID       string  `json:"subId"`
 }
@@ -51,7 +58,7 @@ func NewClient(key string, httpClient *http.Client) (*Client, error) {
 
 	c := &Client{
 		apiKey:     key,
-		baseUrl:    baseUrl,
+		baseUrl:    BaseUrl,
 		httpClient: httpClient,
 	}
 
@@ -103,7 +110,7 @@ func verifyRegionCode(rc string) bool {
 	return true
 }
 
-func (c *Client) RecentObs(p RegionSearchParams) ([]BirdObservation, error) {
+func (c *Client) RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
 	rc, back, max := p.RegionCode, p.Back, p.MaxResults
 
 	// Reject attempt for region code without correct shape
@@ -114,21 +121,51 @@ func (c *Client) RecentObs(p RegionSearchParams) ([]BirdObservation, error) {
 
 	// Convert URL string to type URL to safely add query parameters, then
 	// convert it back to string form.
-	url, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent", rc))
+	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent", rc))
 	if err != nil {
 		return nil, err
 	}
-	q := url.Query()
 
+	q := u.Query()
 	q.Add("back", strconv.Itoa(back))
 	q.Add("maxResults", strconv.Itoa(max))
-	url.RawQuery = q.Encode()
+	u.RawQuery = q.Encode()
 
-	endpoint := url.String()
+	endpoint := u.String()
 	res, err := c.eBirdFetch(endpoint)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch recent observations, %w", err)
+	}
+
+	return res, nil
+}
+
+func (c *Client) NotableObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
+	// Unpack search parameters to append them to handle appending to query
+	rc, back, max := p.RegionCode, p.Back, p.MaxResults
+
+	// Reject attempt for region code without correct shape
+	ok := verifyRegionCode(rc)
+	if !ok {
+		return nil, fmt.Errorf("string %s does not match region code format", rc)
+	}
+
+	// Convert URL string to type URL to safely add query parameters, then
+	// convert it back to string form.
+	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/notable", rc))
+	if err != nil {
+		return nil, err
+	}
+
+	q := u.Query()
+	q.Add("back", strconv.Itoa(back))
+	q.Add("maxResults", strconv.Itoa(max))
+	u.RawQuery = q.Encode()
+
+	endpoint := u.String()
+	res, err := c.eBirdFetch(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch notable observations, %w", err)
 	}
 
 	return res, nil
