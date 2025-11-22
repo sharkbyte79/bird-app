@@ -101,23 +101,8 @@ func (c *Client) eBirdFetch(endpoint string) ([]BirdObservation, error) {
 	}
 }
 
-// verifyRegionCode returns true if the given string rc represents
-// a valid region code of the form "XX-00-...", and false otherwise.
-func verifyRegionCode(rc string) bool {
-	// TODO: check if region code string matches expected format
-	// by regex
-	// b, err := regexp.Match("", []byte(rc))
-	return true
-}
-
 func (c *Client) RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
 	rc, back, max := p.RegionCode, p.Back, p.MaxResults
-
-	// Reject attempt for region code without correct shape
-	ok := verifyRegionCode(rc)
-	if !ok {
-		return nil, fmt.Errorf("string %s does not match region code format", rc)
-	}
 
 	// Convert URL string to type URL to safely add query parameters, then
 	// convert it back to string form.
@@ -144,15 +129,9 @@ func (c *Client) NotableObsByRegion(p RegionSearchParams) ([]BirdObservation, er
 	// Unpack search parameters to append them to handle appending to query
 	rc, back, max := p.RegionCode, p.Back, p.MaxResults
 
-	// Reject attempt for region code without correct shape
-	ok := verifyRegionCode(rc)
-	if !ok {
-		return nil, fmt.Errorf("string %s does not match region code format", rc)
-	}
-
 	// Convert URL string to type URL to safely add query parameters, then
 	// convert it back to string form.
-	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/notable", rc))
+	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent/notable", rc))
 	if err != nil {
 		return nil, err
 	}
