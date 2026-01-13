@@ -11,7 +11,7 @@ import (
 	service "github.com/sharkbyte79/birdup/internal/service"
 )
 
-var eBirdApiKey string
+var eBirdApiToken string
 
 func init() {
 	err := godotenv.Load()
@@ -19,7 +19,12 @@ func init() {
 		log.Fatal("failed to load envars from .env")
 	}
 
-	eBirdApiKey = os.Getenv("EBIRD_API_KEY")
+	tok, ok := os.LookupEnv("EBIRD_API_KEY")
+	if !ok {
+		log.Fatal("failed to fetch eBird API key")
+	}
+
+	eBirdApiToken = tok
 }
 
 func main() {
@@ -27,13 +32,13 @@ func main() {
 
 	// Create one http client for eBird service
 	hc := &http.Client{Timeout: time.Second * 10}
-	s, err := service.NewEBirdService(eBirdApiKey, hc)
+	s, err := service.NewEBirdService(eBirdApiToken, hc)
 	if err != nil {
 		return
 	}
 
-	r.GET("/observations/:region", recentObservations(s))
-	r.GET("/observations/:region/notable", notableObservations(s))
+	r.GET("/observations/:region", recentObsHandler(s))
+	r.GET("/observations/:region/notable", notableObsHandler(s))
 
 	r.Run(":8080")
 }

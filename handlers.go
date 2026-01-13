@@ -7,9 +7,9 @@ import (
 	ebs "github.com/sharkbyte79/birdup/internal/service"
 )
 
-// RecentObservations handles a GET request to a bundle of bird observations
-// from the eBird API according to the given region code.
-func recentObservations(s *ebs.EBirdService) gin.HandlerFunc {
+// recentObsHandler returns a HandlerFunc that handles a GET request to
+// retrieve a bundle of recent bird observations.
+func recentObsHandler(s *ebs.EBirdService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		region := ctx.Param("region")
 
@@ -18,11 +18,13 @@ func recentObservations(s *ebs.EBirdService) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 
-		ctx.IndentedJSON(http.StatusOK, gin.H{"data": res})
+		ctx.IndentedJSON(http.StatusOK, res)
 	}
 }
 
-func notableObservations(s *ebs.EBirdService) gin.HandlerFunc {
+// recentObsHandler returns a HandlerFunc that handles a GET request to
+// retrieve a bundle of notable bird observations.
+func notableObsHandler(s *ebs.EBirdService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		region := ctx.Param("region")
 
@@ -31,6 +33,6 @@ func notableObservations(s *ebs.EBirdService) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 
-		ctx.IndentedJSON(http.StatusOK, gin.H{"data": res})
+		ctx.IndentedJSON(http.StatusOK, res)
 	}
 }

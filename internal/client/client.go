@@ -15,8 +15,7 @@ const (
 )
 
 type EBirdClient interface {
-	RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, error)
-	NotableObsByRegion(p RegionSearchParams) ([]BirdObservation, error)
+	ObsByRegion(p RegionSearchParams) ([]BirdObservation, error)
 }
 
 type Client struct {
@@ -38,28 +37,29 @@ type BirdObservation struct {
 	ObsValid    bool    `json:"obsValid"`
 	ObsReviewed bool    `json:"obsReviewed"` // has this observation report been reviewed
 	LocPrivate  bool    `json:"locationPrivate"`
-	SubID       string  `json:"subId"`
+	SubID       string  `json:"subId"` // unique ID for this observation/checklist
 }
 
 type RegionSearchParams struct {
-	RegionCode string
-	Back       int
-	MaxResults int
+	RegionCode string // alphanumeric code for region to filter observations by
+	Back       int    // number of days to search backwards to
+	MaxResults int    // maximum number of observations to get back
+	Notable    bool   // retrieve observations marked as "notable"
 }
 
 // NewClient returns an API client for the eBird API configured with
 // the given API key 'key' or an error.
-func NewClient(key string, httpClient *http.Client) (*Client, error) {
-	// WARN: This does not by any means validate that a non-empty key string
+func NewClient(tok string, hc *http.Client) (*Client, error) {
+	// WARN This does not by any means validate that a non-empty key string
 	// is a valid eBird API key, just that any string is provided.
-	if strings.TrimSpace(key) == "" {
+	if strings.TrimSpace(tok) == "" {
 		return nil, errors.New("no eBird API key was provided for eBird service")
 	}
 
 	c := &Client{
-		apiKey:     key,
+		apiKey:     tok,
 		baseUrl:    BaseUrl,
-		httpClient: httpClient,
+		httpClient: hc,
 	}
 
 	return c, nil
@@ -101,12 +101,17 @@ func (c *Client) eBirdFetch(endpoint string) ([]BirdObservation, error) {
 	}
 }
 
-func (c *Client) RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
-	rc, back, max := p.RegionCode, p.Back, p.MaxResults
+func (c *Client) ObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
+	rc, back, max, notable := p.RegionCode, p.Back, p.MaxResults, p.Notable
+
+	endpointPattern := "/data/obs/%s/recent"
+	if notable {
+		endpointPattern += "/notable"
+	}
 
 	// Convert URL string to type URL to safely add query parameters, then
 	// convert it back to string form.
-	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent", rc))
+	u, err := url.Parse(fmt.Sprintf(endpointPattern, rc))
 	if err != nil {
 		return nil, err
 	}
@@ -120,31 +125,6 @@ func (c *Client) RecentObsByRegion(p RegionSearchParams) ([]BirdObservation, err
 	res, err := c.eBirdFetch(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch recent observations, %w", err)
-	}
-
-	return res, nil
-}
-
-func (c *Client) NotableObsByRegion(p RegionSearchParams) ([]BirdObservation, error) {
-	// Unpack search parameters to append them to handle appending to query
-	rc, back, max := p.RegionCode, p.Back, p.MaxResults
-
-	// Convert URL string to type URL to safely add query parameters, then
-	// convert it back to string form.
-	u, err := url.Parse(fmt.Sprintf("/data/obs/%s/recent/notable", rc))
-	if err != nil {
-		return nil, err
-	}
-
-	q := u.Query()
-	q.Add("back", strconv.Itoa(back))
-	q.Add("maxResults", strconv.Itoa(max))
-	u.RawQuery = q.Encode()
-
-	endpoint := u.String()
-	res, err := c.eBirdFetch(endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch notable observations, %w", err)
 	}
 
 	return res, nil

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	ac "github.com/sharkbyte79/bird-app/internal/client"
+	ac "github.com/sharkbyte79/birdup/internal/client"
 )
 
 type EBirdService struct {
@@ -24,8 +24,8 @@ func validRegionCode(rc string) bool {
 	}
 
 	return ok
-
 }
+
 func NewEBirdService(tok string, hc *http.Client) (*EBirdService, error) {
 	ebc, err := ac.NewClient(tok, hc)
 	if err != nil {
@@ -41,8 +41,8 @@ func (s *EBirdService) RecentObsByRegion(rc string, back, max int) ([]ac.BirdObs
 		return nil, fmt.Errorf("invalid region code: %s", rc)
 	}
 
-	params := ac.RegionSearchParams{RegionCode: rc, Back: back, MaxResults: max}
-	return s.client.RecentObsByRegion(params)
+	params := ac.RegionSearchParams{RegionCode: rc, Back: back, MaxResults: max, Notable: false}
+	return s.client.ObsByRegion(params)
 }
 
 func (s *EBirdService) NotableObsByRegion(rc string, back, max int) ([]ac.BirdObservation, error) {
@@ -51,6 +51,6 @@ func (s *EBirdService) NotableObsByRegion(rc string, back, max int) ([]ac.BirdOb
 		return nil, fmt.Errorf("invalid region code: %s", rc)
 	}
 
-	params := ac.RegionSearchParams{RegionCode: rc, Back: back, MaxResults: max}
-	return s.client.NotableObsByRegion(params)
+	params := ac.RegionSearchParams{RegionCode: rc, Back: back, MaxResults: max, Notable: true}
+	return s.client.ObsByRegion(params)
 }

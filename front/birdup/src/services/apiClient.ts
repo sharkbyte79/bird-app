@@ -1,4 +1,4 @@
-import {birdObservation} from "../../types/shared.types.ts";
+import { birdObservation } from "../../types/shared.types.ts";
 
 const BASE_URL: string = "http://localhost:8080";
 
@@ -27,7 +27,7 @@ export default async function birdupFetch<T = any>(endpoint: string, {
         throw new Error();
     }
 
-    const data = res.body;
+    const data = await res.json();
     return {
         status: res.status,
         data: data as T

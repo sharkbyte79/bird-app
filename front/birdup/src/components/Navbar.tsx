@@ -10,7 +10,7 @@ export default function Navbar({}: NavbarProps) {
   return (
     <header className="sticky bg-white flex top-0 z-40 w-full">
       {/* container around all header bar components */}
-      <div className="flex mx-auto justify-between gap-8 max-w-7xl px-2 sm:px-6 lg:px-8">
+      <div className="flex mx-auto gap-8 max-w-6xl px-2 sm:px-6 lg:px-8">
         {/* left side of header with clickable logo */}
         <span>
           <a href="/" className="text-blue-400 text-3xl">
