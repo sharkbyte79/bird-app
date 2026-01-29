@@ -1,44 +1,43 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	config "github.com/sharkbyte79/birdup/internal/config"
+	db "github.com/sharkbyte79/birdup/internal/database"
 	service "github.com/sharkbyte79/birdup/internal/service"
 )
 
-var eBirdApiToken string
-
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("failed to load envars from .env")
-	}
-
-	tok, ok := os.LookupEnv("EBIRD_API_KEY")
-	if !ok {
-		log.Fatal("failed to fetch eBird API key")
-	}
-
-	eBirdApiToken = tok
-}
-
 func main() {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Failed to load envars")
+	}
+
 	r := gin.Default()
 
 	// Create one http client for eBird service
 	hc := &http.Client{Timeout: time.Second * 10}
-	s, err := service.NewEBirdService(eBirdApiToken, hc)
+	s, err := service.NewEBirdService(cfg.EBirdAPIToken, hc)
 	if err != nil {
-		return
+		log.Fatal("failed to create ebird service")
+	}
+
+	dsn := fmt.Sprintf("host=%s port=%s password=%s dbname=%s user=%s sslmode=disable",
+		cfg.DB.Host, cfg.DB.Port, cfg.DB.Password, cfg.DB.DB, cfg.DB.User)
+
+	// TODO Pass store to user repository implementation
+	_, err = db.NewStore(dsn)
+	if err != nil {
+		log.Fatal("Failed to open database connection")
 	}
 
 	r.GET("/observations/:region", recentObsHandler(s))
 	r.GET("/observations/:region/notable", notableObsHandler(s))
 
-	r.Run(":8080")
+	r.Run(fmt.Sprintf(":%s", cfg.Port))
 }

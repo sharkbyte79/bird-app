@@ -1,3 +1,5 @@
+// Package client provides a configuration object for accessing all secrets
+// from a unitary source.
 package config
 
 import (
@@ -6,8 +8,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-// Config defines a configuration of secrets and environment variables
-// necessary for the app to function.
+// Config defines a configuration of secrets necessary for the app to function.
 type Config struct {
 	Port          string
 	BaseURL       string
@@ -16,12 +17,13 @@ type Config struct {
 }
 
 // PostgresConfig defines a configuration of credentials for connecting to
-// a PostgreSQL database.
+// a PostgreSQL database. Use these fields to construct the Data Source Name.
 type PostgresConfig struct {
 	Password string
 	User     string
 	DB       string
 	Port     string
+	Host     string
 }
 
 // LoadConfig returns a pointer to a Config or an error.
@@ -35,6 +37,7 @@ func LoadConfig() (*Config, error) {
 			User:     os.Getenv("POSTGRES_USER"),
 			DB:       os.Getenv("POSTGRES_DB"),
 			Port:     os.Getenv("POSTGRES_PORT"),
+			Host:     os.Getenv("POSTGRES_HOST"),
 		},
 	}
 	return cfg, nil
