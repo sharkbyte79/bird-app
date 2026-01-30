@@ -26,7 +26,5 @@ func NewStore(dbInfo string) (*Store, error) {
 	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database connection: %w", err)
 	}
-
 	return &Store{db}, nil
-
 }
